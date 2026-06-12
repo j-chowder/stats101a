@@ -1,0 +1,236 @@
+---
+title: "stats101a_hw7"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+
+## (1)
+
+```{r}
+df <- data.frame(read.csv('./AdRevenue.csv'))
+
+str(df)
+```
+
+
+Part A
+
+### (a)
+
+```{r}
+model <- lm(AdRevenue ~ Circulation, df)
+
+summary(model)
+```
+```{r}
+plot(model)
+```
+
+```{r}
+log_model <- lm(AdRevenue ~ I(log(Circulation)), df)
+
+summary(log_model)
+```
+```{r}
+plot(log_model)
+```
+log(Circulation) seems worse. Especially residual vs. fitted plot where there's an identifiable trend now. R-squared value is lower as well.
+
+```{r}
+log_both_model <- lm(I(log(AdRevenue)) ~ I(log(Circulation)), df)
+
+summary(log_both_model)
+```
+```{r}
+plot(log_both_model)
+```
+
+This model is much better. Residuals vs. fitted is much better and there's a lack of a trend. QQ-plot seems much better as well where most values are in a straight line. Scale-location seems better. No bad high leverage either.
+
+### (b)
+
+```{r}
+log_pred <- predict(log_both_model, newdata = data.frame(Circulation = c(0.5, 20)), interval = 'prediction', level = 0.95)
+
+exp(log_pred)
+```
+
+74.30864 with (51.82406, 106.5485)
+522.56626 with (59.89585 758.7626)
+
+### (c)
+
+predictions become less intuitive, intervals are multiplicative and asymmetric. Constant variance of errors seem a bit iffy with the scale-location plot.
+
+Part B
+
+```{r}
+model1 <- lm(AdRevenue ~ Circulation, data = df)
+model2 <- lm(AdRevenue ~ Circulation  + I(Circulation^2), data = df)
+model3 <- lm(AdRevenue ~ Circulation + I(Circulation^2) + I(Circulation^3), data = df)
+```
+
+```{r}
+summary(model1)
+
+plot(model1)
+```
+```{r}
+summary(model2)
+
+plot(model2)
+```
+This one is no good. The upward-trend seen in the Scale-Location plot indicates that it is not valid in terms of the constant variance of errors. The QQ-plot is worse as well.
+
+```{r}
+summary(model3)
+
+plot(model3)
+```
+Scale-location is off again. QQ-plot is bad as well. Residuals plot ain't good either.
+
+So the best choice of model is still the simple linear model without any polynomial transformations.
+
+### (b)
+
+```{r}
+predict(model1, newdata = data.frame(Circulation = c(0.5, 20)), interval = 'prediction', level = 0.95)
+```
+
+
+111.2362 with (26.2383, 196.2342)
+556.8774 with (466.1694, 647.5854)
+
+### (c)
+
+There are outliers in the simple regression model as well as a residual plot that is not the best (all the values are congregated very closely at low fitted values)
+
+Part C
+
+### (a)
+
+Since the model in Part B is just the normal simple regression model, and since we compared that directly with our chosen model in Part A, then the model in Part A is better (double log transform), with reasons explaiend above. Examined the validiity plots for the most part.
+
+### (b)
+
+Part A:
+74.30864 with (51.82406, 106.5485)
+522.56626 with (59.89585 758.7626)
+
+Part B:
+111.2362 with (26.2383, 196.2342)
+556.8774 with (466.1694, 647.5854)
+
+I would recommend the bottom one (Part B) just because it's more intuitive and easy to interpret. Since the intervals in Part A were logged and then exponentiated, it will be harder to interpret.
+
+## (2)
+
+```{r}
+df <- data.frame(read.csv('./marioKart.csv'))
+
+str(df)
+```
+
+### (a)
+
+```{r}
+model <- lm(totalPr ~ startPr + shipPr + duration + nBids + sellerRate + wheels, data = df)
+
+summary(model)
+```
+
+Holding the rest of the predictors constant, a 1-unit increase in the number of bids is associated with an average change of +0.2375 dollars in the total price.
+
+### (b)
+
+Holding all other variables constant, one more wheel is associated with an average change of +7.938 dollars in the total price.
+
+### (c)
+
+```{r}
+model2 <- lm(totalPr ~ startPr + shipPr + duration + nBids + sellerRate + wheels + cond, data = df)
+
+summary(model2)
+```
+
+Holding all variables constant, a used game is associated with an average change of -4.45 dollars in total price compared to a new game. Yes, it does matter with all things being equal -- it is worth 4.45 dollars less on average.
+
+## (3)
+
+```{r}
+df <- data.frame(read.csv('./practiceproblem.csv'))
+
+str(df)
+
+y <- df$finish_time
+x <- df$barrier_time
+resids <- df$resids
+```
+### (a)
+
+```{r}
+# SXX = variation of x
+SXX <- sum((x - mean(x))^2)
+SXX
+```
+
+### (b)
+
+```{r}
+# SYY = variation of y
+SYY <- sum((y - mean(y))^2)
+SYY
+```
+
+### (c)
+
+```{r}
+# estimate = s^2 = SYY / (n - 1)
+
+var <- SYY / (length(df) - 1)
+
+var
+```
+
+### (d)
+
+```{r}
+## SSY = SSreg + RSS; SSreg = SSY - RSS
+
+SSY <- SYY
+RSS <- sum(resids^2)
+
+SSreg <- SSY - RSS
+
+SSreg
+
+```
+
+### (e)
+
+```{r}
+## R-squared = SSreg / SSY
+
+R_squared <- SSreg / SSY
+
+R_squared
+```
+
+### (checking)
+
+```{r}
+model <- lm(y ~ x)
+
+summary(model)
+anova(model)
+```
+
+
+

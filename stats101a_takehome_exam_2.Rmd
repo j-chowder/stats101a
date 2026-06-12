@@ -1,0 +1,96 @@
+---
+title: "stats101a_takehome_exam_2"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+
+```{r}
+blodgett_df <- read.csv('./blodgett.csv')
+
+str(blodgett_df)
+```
+```{r}
+cigbirths_df <- read.csv('./cigbirths.csv')
+
+str(cigbirths_df)
+```
+For Question 1, use the data set blodgett.csv.  These data come from measurements taken in Blodgett Forest, a conifer forest in Northern California.  T_10ft is the temperature (Celsius) recorded 10 feet above the ground at a specific location, and T_140ft is the temperature at 140 feet at the same location.
+
+## Question 1 
+
+### (1.1)
+
+```{r}
+model <- lm(T_140ft ~ T_10ft, data = blodgett_df)
+
+summary(model)
+```
+```{r}
+coef(model)[1]
+```
+
+### 1.2
+
+```{r}
+coef(model)[2]
+```
+
+### 1.3
+
+```{r}
+# constant variance = plot = 1 (residuals vs fitted) and plot = 3 (scale-location)
+
+plot(model, which = c(1,3))
+```
+
+### 1.4
+
+```{r}
+plot(model, which = 1)
+```
+### 1.5
+
+```{r}
+plot(blodgett_df$order, resid(model))
+```
+
+## (2)
+
+```{r}
+model <- lm(fage ~ mage, data = cigbirths_df)
+          
+summary(model)$fstatistic[1]
+```
+
+```{r}
+summary(model)
+```
+### 2.3
+
+```{r}
+predict(model, newdata = data.frame(mage = 20),
+        interval = "confidence",
+        level = 0.95)
+```
+
+### 2.4
+
+```{r}
+mean(cigbirths_df$mage)
+```
+
+## (3)
+
+```{r}
+model <- lm(pounds ~ smoke, data = cigbirths_df)
+
+summary(model)
+```
+

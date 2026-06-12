@@ -1,0 +1,283 @@
+---
+title: "stats101a_hw9"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(car)
+library(leaps)
+```
+
+## (1)
+
+```{r}
+df <- data.frame(read.csv('./pgatour2006-3.csv'))
+
+str(df)
+```
+```{r}
+df <- df |>
+  select(-TigerWoods, -Name)
+```
+
+```{r}
+str(df)
+```
+
+### (a)
+
+```{r}
+best_fit <- regsubsets(
+  PrizeMoney ~ .,
+  data = df,
+  nvmax = ncol(df) - 1
+)
+
+best_summary <- summary(best_fit)
+
+best_model_index <- which.max(best_summary$adjr2)
+best_summary$which[best_model_index, ]
+
+```
+```{r}
+final_model <- lm(
+  PrizeMoney ~ DrivingAccuracy +
+                GIR +
+                BirdieConversion +
+                SandSaves +
+                Scrambling,
+  data = df
+)
+
+summary(final_model)
+```
+
+$\text{PrizeMoney} = \beta_0 + \beta_1(\text{DrivingAccuracy}) + \beta_2(GIR) + \beta_3(\text{BirdieConversion}) + \beta_4(\text{SandSaves}) + \beta_5(\text{Scrambling}) + \epsilon$
+
+### (b)
+
+```{r}
+best_fit <- regsubsets(
+  PrizeMoney ~ .,
+  data = df,
+  nvmax = ncol(df) - 1
+)
+
+best_summary <- summary(best_fit)
+
+best_bic_index <- which.min(best_summary$bic)
+best_summary$which[best_bic_index, ]
+```
+$\text{PrizeMoney} = \beta_0 + \beta_1(\text{DrivingAccuracy}) + \beta_2(\text{GIR}) + \beta_3(\text{BirdieConversion}) + \beta_4(\text{Scrambling}) + \varepsilon$
+
+This one does not include the `Scrambling` feature.
+
+
+### (c)
+
+```{r}
+forward_fit <- regsubsets(
+  PrizeMoney ~ .,
+  data = df,
+  method = "forward",
+  nvmax = ncol(df) - 1
+)
+
+forward_summary <- summary(forward_fit)
+```
+
+```{r}
+best_adjr2 <- which.max(forward_summary$adjr2)
+
+forward_summary$which[best_adjr2, ]
+```
+Best model using adjusted R-squared:
+
+$\text{PrizeMoney} = \beta_0 + \beta_1(\text{DrivingAccuracy}) + \beta_2(\text{GIR}) + \beta_3(\text{BirdieConversion}) + \beta_4(\text{SandSaves}) + \beta_5(\text{Scrambling}) + \varepsilon$
+
+```{r}
+best_bic <- which.min(forward_summary$bic)
+
+forward_summary$which[best_bic, ]
+```
+Best model using BIC:
+
+$\text{PrizeMoney} = \beta_0 + \beta_1(\text{DrivingAccuracy}) + \beta_2(\text{GIR}) + \beta_3(\text{BirdieConversion}) + \beta_4(\text{Scrambling}) + \varepsilon$
+
+### (d)
+
+```{r}
+backward_fit <- regsubsets(
+  PrizeMoney ~ .,
+  data = df,
+  method = "backward",
+  nvmax = ncol(df) - 1
+)
+
+backward_summary <- summary(backward_fit)
+
+best_adjr2 <- which.max(backward_summary$adjr2)
+
+backward_summary$which[best_adjr2, ]
+```
+Best model using adjusted R-squared:
+
+$\text{PrizeMoney} = \beta_0 + \beta_1(\text{DrivingAccuracy}) + \beta_2(\text{GIR}) + \beta_3(\text{BirdieConversion}) + \beta_4(\text{SandSaves}) + \beta_5(\text{Scrambling}) + \varepsilon$
+
+```{r}
+best_bic <- which.min(backward_summary$bic)
+
+backward_summary$which[best_bic, ]
+```
+Best model using BIC:
+
+$\text{PrizeMoney} = \beta_0 + \beta_1(\text{DrivingAccuracy}) + \beta_2(\text{GIR}) + \beta_3(\text{BirdieConversion}) + \beta_4(\text{Scrambling}) + \varepsilon$
+
+### (e)
+
+variables that repeatedly appear:
+ - DrivingAccuracy
+ - GIR
+ - BirdieConversion
+ - Scrambling
+
+some:
+ - SandSaves
+ 
+
+## (2)
+
+### (a)
+
+```{r}
+full_model <- lm(PrizeMoney ~ ., data = df)
+summary(full_model)
+```
+
+```{r}
+par(mfrow = c(2, 2))
+
+plot(full_model)
+```
+
+There's a trend in residuals v. fitted that shows breaks the linear trend.
+constant variance is broken (fanning in residuals v. fitted and increasing trend in scale-location)
+QQ plot is not the best, errors are not standard.
+
+### (b)
+
+```{r}
+invResPlot(full_model)
+```
+
+log transform is quite close to the optimal lambda.
+
+```{r}
+summary(powerTransform(full_model))
+```
+
+the recommended rounded power is 0. With the LR test, lambda = 0 p value > 0.05, so we do not reject. The LR test for lambda 1 has pvalue of < 2.22e-16 < 0.05, so we reject the null hypothesis , concluding we do need a transformation.
+
+log transform is good.
+
+### (c)
+
+```{r}
+log_model <- lm(log(PrizeMoney) ~ ., data = df)
+
+par(mfrow = c(2, 2))
+
+plot(log_model)
+```
+
+Validity is improved. There is a much lesser indication of a trend in Residuals v. Fitted. And constant variance seems to be good (or at the very least much better) in residuals vs. fitted and scale-location plot. Q-Q residuals looks much more straight line as well.
+
+### (d)
+
+```{r}
+pt_pred <- powerTransform(
+  cbind(AveDrivingDistance,
+        DrivingAccuracy,
+        GIR,
+        PuttingAverage,
+        BirdieConversion,
+        SandSaves,
+        Scrambling,
+        BounceBack,
+        PuttsPerRound) ~ 1,
+  data = df
+)
+
+summary(pt_pred)
+```
+```{r}
+df_trans <- df
+
+df_trans$AveDrivingDistance <- bcPower(df$AveDrivingDistance, pt_pred$roundlam[1])
+df_trans$DrivingAccuracy    <- bcPower(df$DrivingAccuracy,    pt_pred$roundlam[2])
+df_trans$GIR                <- bcPower(df$GIR,                pt_pred$roundlam[3])
+df_trans$PuttingAverage     <- bcPower(df$PuttingAverage,     pt_pred$roundlam[4])
+df_trans$BirdieConversion   <- bcPower(df$BirdieConversion,   pt_pred$roundlam[5])
+df_trans$SandSaves          <- bcPower(df$SandSaves,          pt_pred$roundlam[6])
+df_trans$Scrambling         <- bcPower(df$Scrambling,         pt_pred$roundlam[7])
+df_trans$BounceBack         <- bcPower(df$BounceBack,         pt_pred$roundlam[8])
+df_trans$PuttsPerRound      <- bcPower(df$PuttsPerRound,      pt_pred$roundlam[9])
+```
+
+```{r}
+bc_model <- lm(
+  PrizeMoney ~ .,
+  data = df_trans
+)
+
+par(mfrow = c(2, 2))
+
+plot(bc_model)
+```
+
+Linearity trend is violated as there exists a trend in the residuals vs fitted plot. Constant variance is violated (fanning in residuals plot and upward trend in scale-location plot). QQ residuals is slightly better but still not amazing.
+
+### (e)
+
+```{r}
+log_bc_model <- lm(
+  log(PrizeMoney) ~ .,
+  data = df_trans
+)
+
+par(mfrow = c(2, 2))
+
+plot(log_bc_model)
+```
+
+I recommend the simply y-transformed model. The y-transformed model and the y and x's transformed model seem very similar, with both of them being much better than the other two models. But, the y-transformed model is easier to intrepret compared to the x's being transformed as well, which is why I recommend that one -- there's not a large enough improvement in validity for it to be worth the extra complications in interpretation.
+
+### (f)
+
+```{r}
+hat_values <- hatvalues(log_model)
+
+n <- nrow(df)
+p <- length(coef(log_model))
+
+high_lev <- which(hat_values > 2 * p / n)
+high_lev
+```
+
+28  40 168 178 are observations worth investigating.
+
+```{r}
+cooks <- cooks.distance(log_model)
+
+influential <- which(cooks > 4 / n)
+influential
+```
+
+  1   9  40  47  60  63  84 101 122 125 128 168 180 185 are observations worth investigating.
+  
+  

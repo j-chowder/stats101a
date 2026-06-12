@@ -1,0 +1,278 @@
+---
+title: "stats101a_hw3"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r}
+set.seed(123)
+library(tidyverse)
+library(ggplot2)
+```
+
+## (1)
+
+### (a)
+
+```{r}
+sample.estimate <- function(n){
+  my_sample <- rnorm(n, 20, 4) # n samples, mean, sd
+  
+  xbar <- mean(my_sample)
+  s <- var(my_sample)
+  sig_hat <- mean((mean(my_sample) - my_sample)^2)
+  
+  estimates <- c(average = xbar, variance = s, max_likelihood = sig_hat)
+  estimates
+}
+```
+
+```{r}
+df <- data.frame(
+  average = numeric(),
+  variance = numeric(),
+  max_likelihood = numeric()
+)
+
+
+
+for (i in 1:2000){
+  df <- rbind(df, as.data.frame(t(sample.estimate(10))))
+}
+```
+
+```{r}
+ggplot(df, aes(x=average)) +
+  geom_histogram()
+```
+```{r}
+ggplot(df, aes(x=variance)) +
+  geom_histogram()
+```
+```{r}
+ggplot(df, aes(x=max_likelihood)) +
+  geom_histogram()
+```
+
+### (b)
+
+```{r}
+mean(df$average)
+mean(df$variance)
+mean(df$max_likelihood)
+```
+
+$\bar{x}$ is unbiased and $s^2$ is unbiased. The mean of their estimates is very accurate to the actual true value. (20 and 16).
+
+We prefer $s^2$ over $\hat{\sigma}$ because $s^2$ is less biased -- it is more accurate.
+
+### c.)
+
+$E(s^2) = E(\frac{n}{n-1}\hat{\sigma}^2)=\frac{n}{n-1}E(\hat{\sigma}^2)=(\frac{n}{n-1})*(\frac{n-1}{n}\sigma^2)=\sigma^2$
+
+
+### d.)
+
+when n is very large, then the difference in bias between $\hat{\sigma}$ and $s^2$ will become smaller and smaller. So eventually the bias will be negligible.
+
+For example, when n is 10, then $\hat{\sigma}^2=\frac{n-1}{n}\sigma^2=0.9\sigma^2$.
+
+But when n is 10000, then $\hat{\sigma}^2=0.9999\sigma^2$
+
+### e.)
+
+```{r}
+df2 <- data.frame(
+  average = numeric(),
+  variance = numeric(),
+  max_likelihood = numeric()
+)
+
+for (i in 1:2000){
+  df2 <- rbind(df, as.data.frame(t(sample.estimate(1000))))
+}
+```
+
+```{r}
+abs(mean(df$variance) - mean(df$max_likelihood)) / ((mean(df$variance) + mean(df$max_likelihood)) / 2) * 100
+```
+```{r}
+abs(mean(df2$variance) - mean(df2$max_likelihood)) / ((mean(df2$variance) + mean(df2$max_likelihood)) / 2) * 100
+```
+```{r}
+mean(df$variance)
+mean(df2$variance)
+mean(df$max_likelihood)
+mean(df2$max_likelihood)
+```
+
+$\hat{\sigma}$ is more accurate when n is larger. Similarly, the percent difference between it and $s^2$ is smaller when n is larger.
+
+### f.)
+
+```{r}
+sd(df2$average)
+sd(df$average)
+
+sd(df2$variance)
+sd(df$variance)
+
+sd(df2$max_likelihood)
+sd(df$max_likelihood)
+```
+It increases the precision (the standard deviation decreases, that is, there is less spread.)
+
+### g.)
+
+The sample mean is an unbiased estimator of the population mean, but with a small sample size of n = 3, it has low precision (high variability) so the estimate may be far from the true mean in any given sample.
+
+## 2.)
+
+### a.)
+
+```{r}
+my_linear_model <- function(beta_0, beta_1, sigma, x, seed){
+  set.seed(seed)
+  eps <- rnorm(length(x), 0, sigma)
+  
+  y <- beta_0 + beta_1 * x + eps
+  
+  y
+}
+```
+
+
+### b.)
+
+```{r}
+x <- rep(seq(1,10,by=.1),4) 
+y <- my_linear_model(beta_0=1, beta_1=3, sigma=10, x=x,seed=123)
+
+plot(x,y)
+```
+
+### c.)
+
+```{r}
+cor(x,y)
+```
+
+0.645755
+
+### d.)
+
+```{r}
+x <- rep(seq(1,10,by=.1),4) 
+y <- my_linear_model(beta_0=1, beta_1=10, sigma=5, x=x,seed=123)
+
+plot(x,y)
+```
+
+```{r}
+cor(x,y)
+```
+$\beta_0=1,\beta_1=10,\sigma=5,r=0.9836797$
+
+### 3.)
+
+```{r}
+df <- data.frame(read.csv('./heightarmspanRAW2026.csv'))
+```
+
+```{r}
+head(df)
+```
+
+### a.)
+
+```{r}
+# standardize the data so that its numeric. Remove everything except digits (1-9) and the decimal dot (.)
+df$What.is.your.height.in.INCHES <- str_remove_all(df$What.is.your.height.in.INCHES, "[^1-9.]")
+df$What.is.your..wingspan..in.INCHES <- str_remove_all(df$What.is.your..wingspan..in.INCHES, "[^1-9.]")
+```
+
+```{r}
+# Change the column names so it's shorter.
+names(df) <- c('timestamp', 'height', 'wingspan', 'dominant')
+# cast height, wingspan as numeric. (so that i can do functions that need numeric, like mean)
+df$height <- as.numeric(df$height)
+df$wingspan <- as.numeric(df$wingspan)
+```
+
+```{r}
+summary(df$height)
+```
+
+```{r}
+ggplot(df, aes(x=height)) +
+  geom_histogram()
+```
+```{r}
+summary(df$wingspan)
+```
+
+```{r}
+ggplot(df, aes(x=wingspan)) +
+  geom_histogram()
+```
+
+
+```{r}
+### remove clear outliers (shortest person ever is 24 inches). wingspan is also around that.
+df <- df |>
+  filter(height > 20, wingspan > 20)
+```
+
+
+### b.)
+
+```{r}
+plot(df$height, df$wingspan)
+```
+
+```{r}
+cor(df$height, df$wingspan)
+```
+
+clear positive linear relationship between height and wingspan. (height increases, wingspan increases).
+the strength of the relationship is pretty strong, with a correlation coefficient of 0.86.
+A clear outlier would be the person with 65 inch height but less than 50 inch wingspan.
+
+### c.)
+
+```{r}
+model <- lm(wingspan ~ height, data = df)
+
+summary(model)
+```
+$\hat{y} = -11.07685 + 1.16593x$
+
+```{r}
+ggplot(df, aes(x=height, y = wingspan)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+### d.) 
+
+my height is 64 inches (5'4")
+$\hat{y} = -11.07685 + 1.16593 * 64 = 63.54267$
+
+my actual wingspan is 65 inches. so the residual is $y - \hat{y} =65 - 63.54267 = -1.457$ 
+
+### e.)
+
+```{r}
+plot(df$height, df$wingspan)
+abline(0,1)
+points(76, 79, col = "red", pch = 19, cex = 1.5)
+```
+
+Based on the data, I would say no it is not particularly unusual. The point lies close to the line so the residual is pretty small. It aligns with the trend, and there are other points that seem to be greater outliers.
+
+
+
+
+
+

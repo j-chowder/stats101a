@@ -1,0 +1,204 @@
+---
+title: "stats101a_hw2"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+## 1)
+
+  * $\bar{x} = 204565.00$
+  * $s = 270536.10$
+  
+### a.)
+
+  * there is a high variability so the data is very spread out.
+    * not tightly clustered around the mean.
+  * likely right-skewed (as income has a floor of 0).
+
+### b.)
+
+  $CI = \bar{x} \pm t^*(\frac{s}{\sqrt{n}})$
+  
+  $t^*$ for 95% confidence and df = 29 is about 2.045.
+  
+  $SE = \frac{s}{\sqrt{n}} = \frac{270536.10}{\sqrt{30}} \approx 49394.6$
+  
+  $MOE = 2.045 * 49394.6 \approx 101000$
+  
+  $CI = \bar{x} \pm MOE = 204565 \pm 101000 = (103565, 305565)$
+  
+### c.)
+
+  if we were to do the same sampling procedure of 30 respondents, and compute a confidence interval each time, about 95% of those intervals would contain the true average income of the population.
+  
+  
+### d.)
+
+  1. The population is not Normal because income is not Normal. But, sample size is n = 30, which is large enough for the sampling distribution of the mean to be approximately normal. So, the normality condition should be okay.
+  
+  2. sample was randomly selected which supports independence. with replacement helps ensure independence between observations.
+  
+  So yes, I think the conditions for a valid confidence interval are met.
+  
+
+### e.)
+
+  No. The confidence interval constructed in part b is for the population mean. NOT for future sample means. It tells us that 95% of the intervals from repeated samples will contain the true popoulation mean; it does not tell us anything about the future sample means.
+  
+### f.)
+
+  Less than. Income can not be 0, yet the sample standard deviation is higher than the mean. Which likely means that there is a heavy right skew (and intuitively, income is right skewed). Right skewed distributions inherently have lower medians than means, as the mean will be higher due to the influence of outliers.
+  
+
+## 2.)
+
+```{r}
+library(tidyverse)
+df <- read.csv('./census2020.csv')
+str(df)
+```
+```{r}
+set.seed(42)
+
+mysample <- slice_sample(df, n=30, replace=FALSE)
+```
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+ggplot(mysample, aes(x=Income.wages)) +
+  geom_histogram()
+```
+the distribution is very right-skewed. most observations are lower, with extreme outliers. It is non-normal.
+
+
+### b.)
+
+```{r}
+mean(mysample$Income.wages)
+```
+
+```{r}
+sd(mysample$Income.wages)
+```
+
+### (c)
+
+```{r}
+# 90% confidence level
+t.test(mysample$Income.wages, conf.level = 0.9)
+```
+```{r}
+# 0.95 confidence level
+t.test(mysample$Income.wages, conf.level = 0.95)
+```
+```{r}
+# parameter value
+mu <- mean(df$Income.wages)
+
+mu
+```
+
+90% confidence interval: (58344.37, 267722.03)
+  * yes interval contains 224208.5
+95% confidence interval: (37019.84, 289046.56)
+  * yes interval contains 224208.5
+  
+
+### d.)
+
+```{r}
+sample_distribution <- numeric(10000)
+
+for (i in 1:10000){
+  samp <- slice_sample(df, n=30, replace=FALSE)
+  sample_distribution[i] <- mean(samp$Income.wages)
+}
+```
+
+```{r}
+ggplot(data.frame(sample_distribution), aes(x=sample_distribution)) +
+  geom_histogram()
+```
+
+yes it looks approximately normal. This means that the sample size of 30 is large enough in this case.
+
+## 3.)
+
+### a.)
+
+```{r}
+summary_stats <- function(x){
+  c(
+    mean = mean(x),
+    median = median(x),
+    std = sd(x),
+    IQR = IQR(x)
+  )
+}
+
+summary_stats(df$Income.wages)
+```
+
+### b.)
+
+Null hypothesis $H_0: \mu \leq 200000$
+Alternative hypothesis $H_a: \mu > 200000$
+
+### c.)
+
+```{r}
+t.test(df$Income.wages,
+       mu = 200000,
+       alternative = 'greater')
+```
+t = 1.9776
+
+### d.) 
+
+p-value = 0.02412
+
+
+### e.)
+
+with $\alpha = 0.05$, and since p-value = 0.02 < 0.05, we can conclude that there is significant evidence to reject the null hypothesis. That is, there is evidence that the mean income was greater than 200,000 in 2020 under the politician's guidance.
+
+### f.)
+
+Threshold, if the true mean income were actually <= 200,000, there's a 5% chance that my sample could produce a mean high enough to incorrectly conclude it's greater.
+
+
+## 4.)
+
+### a.)
+
+
+```{r}
+ggplot(df, aes(x=Income.wages, y=Sex)) +
+  geom_boxplot()
+```
+
+Male incomes are generally higher, with the median male income being higher than the median female income. 
+The top 25% of male income (3rd quartile) is much higher than the top 25% of female income.
+Both male and female incomes have outliers, with especially high earns, but males have more outliers.
+
+
+### b.)
+
+Null hypothesis $H_0: \mu_{male} = \mu_{female}$
+
+Alternative hypothesis $H_a: \mu_{male} \ne \mu_{female}$
+
+```{r}
+t.test(Income.wages ~ Sex, data=df)
+```
+t = -0.90322.
+p-value = 0.3666.
+
+With $\alpha = 0.05$, and since p = 0.367 > 0.05, we fail to reject the null hypothesis. There is insufficient evidence to conclude that the average male income differs from the average female income.
+
+
+  

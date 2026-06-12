@@ -1,0 +1,109 @@
+---
+title: "stats101a_takehome1"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+nasa <- read.csv('./nasa.csv')
+```
+
+```{r}
+str(nasa)
+```
+```{r}
+head(nasa)
+```
+Q1.1 
+Which month has the most observations?
+
+```{r}
+nasa |>
+  group_by(Month) |>
+  summarise(n = n()) |>
+  slice_max(n) |>
+  select(Month)
+```
+
+```{r}
+nasa |>
+  group_by(Month) |>
+  summarize(precip_sd = sd(Precipitation)) |>
+  slice_min(precip_sd) |>
+  select(Month)
+```
+```{r}
+nasa |>
+  filter(Clouds.daytime <= quantile(nasa$Clouds.daytime, 0.25, na.rm=TRUE)) |>
+  summarize(avg_max_temp = mean(Max.air.temp))
+```
+```{r}
+# sum(is.na(nasa$precipitation)) == 0 so dont need to worry about NAs.
+x <- nasa$Precipitation
+n <- length(x)
+xbar <- mean(x)
+s <- sd(x)
+
+t <- qt(0.95, df = n - 1)
+
+lower_bound <- xbar - t * s / sqrt(n)
+lower_bound
+
+upper_bound <- xbar + t * s / sqrt(n)
+upper_bound
+```
+
+```{r}
+t.test(nasa$Precipitation, conf.level = 0.90)$conf.int
+```
+
+
+```{r}
+ggplot(nasa, aes(x=Precipitation)) +
+  geom_histogram()
+```
+
+```{r}
+t.test(p_2024$Precipitation, p_2025$Precipitation, alternative = 'greater')
+```
+```{r}
+p_2024 <- nasa |>
+  filter(Year == 2024) |>
+  select(Precipitation)
+
+p_2025 <- nasa |>
+  filter(Year == 2025) |>
+  select(Precipitation)
+```
+
+```{r}
+mean(p_2024$Precipitation)
+```
+
+```{r}
+(mean(p_2024$Precipitation) - mean(p_2025$Precipitation)) /
+  sqrt(var(p_2024$Precipitation) / length(p_2024$Precipitation) +
+       var(p_2025$Precipitation) / length(p_2025$Precipitation))
+```
+
+
+
+```{r}
+results <-c()
+set.seed(555)
+for (i in 1:1000){
+  sample_data <- sample(nasa$Precipitation, replace=TRUE)
+  results[i] <- mean(sample_data, na.rm=TRUE)
+}
+hist(results)
+```
+
+
+
+
+
+
+

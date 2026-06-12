@@ -1,0 +1,212 @@
+---
+title: "stats101a_hw6"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+## (1)
+
+```{r}
+df <- data.frame(read_tsv('./iowatest.txt'))
+
+str(df)
+```
+
+### (a)
+
+```{r}
+df$iowa_city <- ifelse(df$City == 'Iowa City', 1, 0)
+
+model <- lm(Test ~ iowa_city, data = df)
+
+summary(model)
+```
+the intercept of 49.353 is the estimated average test performance for schools not located in Iowa City.
+
+then the coefficient for `iowa_city` being 14.705 means that schools in Iowa City are esetimated to score about 14.7 points higher on average than schools in other cities.
+
+the p-value for `iowa_city` is 0.000152 (much smaller than 0.05), which provides strong evidence that schools in Iowa City perform differently from schools in other cities.
+
+### (b)
+
+```{r}
+ggplot(df, aes(x=factor(iowa_city), y = Test)) +
+  geom_boxplot()
+```
+
+### (c)
+
+```{r}
+model <- lm(Test ~ Poverty, data = df)
+
+summary(model)
+```
+
+For each one-unit increase in poverty score, the predicted test score decreases by about 0.54 points on average. p-value for `Poverty` is <2e-16 which is << 0.05, which provides strong evidence that poverty is associated with test scores.
+
+### (d)
+
+```{r}
+plot(model, which = c(1,2,3))
+```
+Residuals v. Fitted Plot
+
+- residuals doesn't seem to have a trend. Supports assumption of a linear relationship trend.
+- no existance of a fan, the spread of residuals appears fairly consistent. can possibly conclude constant variance.
+
+QQ Plot
+
+- most points lie on the line which indicates that the residuals are approximately normal.
+- there are some deviations in the tails but not too severe or significant.
+
+Scale-location Plot
+
+- the red line is mostly flat, with only a small upward trend at the end. so the residual variance is approximately constant.
+
+### (e)
+
+```{r}
+lev <- hatvalues(model)
+
+which.max(lev) # row
+```
+
+```{r}
+cook <- cooks.distance(model)
+
+# Common cutoff values
+lev_cutoff <- 2 * mean(lev)
+cook_cutoff <- 4 / nrow(df)
+
+# Identify potentially problematic points
+which(lev > lev_cutoff & cook > cook_cutoff)
+```
+bad leverage points = row 7 and row 109.
+
+### (f)
+
+$H_0: \beta_1=0$ (poverty has no linear relationship with test score, slope is zero).
+
+$H_1: \beta_1 \ne 0$ (poverty is linearly associated with test score, slope is not zero).
+
+the f-statistic p-value: < 2.2e-16, and since it is much smaller than 0.05, we reject the null hypothesis.
+
+
+## (2)
+
+```{r}
+df <- data.frame(read_table('./indicators.txt'))
+
+str(df)
+```
+```{r}
+model <- lm(PriceChange ~ LoanPaymentsOverdue, data = df)
+```
+
+### (a)
+
+```{r}
+plot(model, which = 1)
+```
+
+Trend component is fit correctly. The residuals appear to be randomly distributed (no trend), which suggests that the linear trend component is appropriate.
+
+The constant variance condition doesn't seem to hold. The residual spread is much more clustered around `Fitted values` = -3 and much more spread out before and after that.
+
+### (b)
+
+```{r}
+plot(model, which = 2)
+```
+
+```{r eval = FALSE}
+# generate 19 QQ plots from normal data
+n <- length(residuals(model))
+
+
+for(i in 1:19) {
+  x <- rnorm(n)
+  qqnorm(x, main = paste('simulated', i))
+  qqline(x, col = 'red')
+}
+```
+
+I personally don't think that the qq-norm plot from the data stands out enough that it's "different" from the others. So, I think that the condition that the errors are Normally distributed does hold.
+
+### (c)
+
+The Normal QQ plot shows that the residuals fall resonably close to the reference line (with small deviation in the tails). Compared to the simulated QQ plots from an actual Normal distribution, the residual plot does not appear unusually different, so the assumption that the errors are Normally distributed appears to be reasonably valid.
+
+### (d)
+
+```{r}
+plot(model, which = 3)
+```
+
+The red LOESS line is not flat, it rises then dips and then rises. So I would say that the constant variance assumption is only partially satisfied, and the pattern suggests mild non-constant variance in the residuals.
+
+### (e)
+
+```{r}
+lev <- hatvalues(model)
+
+cutoff <- 2 * mean(lev)
+
+which(lev > cutoff)
+
+```
+
+rows  9 16. (using criteria of > 2 * mean(lev))
+
+### (f)
+
+```{r}
+cook_cutoff <- 4 / nrow(df)
+cook <- cooks.distance(model)
+
+# Identify bad leverage points
+bad_points <- which(lev > cutoff & cook > cook_cutoff)
+
+bad_points
+```
+
+row 16
+
+### (g)
+
+```{r}
+which(cook > cutoff)
+```
+
+row 16. since it has a Cook's distance value exceeding the threshold of 4 / n, indicating high influence. Removing it would cause a big change in the estimated regression model and line.
+
+### (h)
+
+leverage - measure show far an observation's predictor values are from the rest of the data. how different x is from the rest of the x-values
+
+influence - how much the model would change if that data point was deleted.
+
+
+## (3)
+
+### (a)
+
+the model being highly effective does not necessarily equate to the coefficient for `Distance` being large and "highly statistically significant".  This only means that there is strong evidence that airfare and distance are related linearly to some extent. But, significance does not imply that the model form is correct, the assumptions are satisfied, and that the model is valid.
+
+While an R-squared value of 99.4% does indicate that the line explains most of the variability, it can still be misleading. For instance, plotting a residual plot can still show signs of nonlinearity or non constant variance in residuals even if R-squared is very high.
+
+In fact, the residual plot does show a pattern (curve) which indicates that the relationship between Fare and Distance may not be truly linear.
+
+### (b)
+
+No the ordinary straight line regression model does not seem to fit the data well. From the residual plot, there is a curved pattern rather than random scatter, so the model is missing some nonlinear structure.
+
+A better model would have nonlinearity incorporated as well, for instance a quadratic regression where you include a new $x_2 =$ `Distance`$^2$ predictor.
+
+You can also check for outliers (standardized residuals of -2 and 3) to see if those are high influence points.
+

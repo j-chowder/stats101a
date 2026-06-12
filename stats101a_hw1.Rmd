@@ -1,0 +1,170 @@
+---
+title: "stats101a_hw1"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+
+```{r}
+df <- read.csv('./rainfallLAcounty2025-26.csv')
+library(tidyverse)
+str(df)
+```
+
+## (1)
+
+### (a)
+
+```{r}
+length(unique(df))
+```
+### (b)
+
+```{r}
+names(table(df$STATION))[which.min(table(df$STATION))]
+```
+### (c)
+
+```{r}
+max(table(df$STATION))
+```
+
+## (2)
+
+### (a)
+```{r}
+str(df)
+```
+
+```{r}
+df |>
+  slice_max(DATE, with_ties=FALSE) |>
+  select(DATE)
+
+df |>
+  slice_min(DATE, with_ties=FALSE) |>
+  select(DATE)
+```
+Time period is 2025-03-01 to 2026-03-13
+
+### (b)
+
+
+```{r}
+df |>
+  arrange(desc(PRCP)) |>
+  slice_head() |>
+  select(NAME, DATE, PRCP)
+```
+SANTA CLARITA 3.1 WSW, CA US	2025-12-25	4.75	
+
+## (3)
+
+```{r}
+ucla_stations <- df |>
+  filter(NAME == "U C L A, CA US")
+```
+
+### (a)
+
+```{r}
+ucla_stations |>
+  filter(PRCP >= 1) |>
+  summarize(n = n())
+```
+5 days
+
+### (b)
+
+```{r}
+ucla_stations |>
+  filter(PRCP >= 1) |>
+  select(PRCP) |>
+  summary()
+```
+### (c)
+
+```{r}
+ucla_stations[ucla_stations$TMAX == max(ucla_stations$TMAX), ][, c('TMAX', 'DATE')]
+ucla_stations[ucla_stations$TMIN == max(ucla_stations$TMIN), ][, c('TMIN', 'DATE')]
+```
+hottest high temperature: 94 on 2025-10-29
+hottest low temperature: 69 on 2025-08-22
+
+## (4)
+
+
+
+
+```{r}
+prcp_df <- df |>
+  group_by(NAME) |>
+  summarize(avg_PRCP = mean(PRCP, na.rm = TRUE), total_PRCP = sum(PRCP, na.rm=TRUE))
+
+prcp_df |>
+  filter(avg_PRCP == max(avg_PRCP, na.rm = TRUE)) |>
+  select(NAME, avg_PRCP)
+
+prcp_df |>
+  arrange(desc(total_PRCP)) |>
+  slice_head() |>
+  select(NAME, total_PRCP)
+
+```
+highest average precipitation is SANTA CLARITA 3.1 WSW, CA US with 0.6525 inches
+highest total is LA CRESCENTA MONTROSE 0.3 NE, CA US	with 37.86 inches
+
+## (5)
+
+```{r}
+ggplot(ucla_stations, aes(x= PRCP)) +
+  geom_histogram()
+```
+
+right-skewed distribution. (most values are near 0)
+
+## (6)
+
+### (a)
+
+independence - samples are independent of each other. observations within each sample are independent.
+
+random sampling - it should be random
+
+normal distribution - both population distributions are normal or sample sizes are large.
+
+### (b)
+
+independence within groups
+ - can not verify from data alone
+ - need to check study design and procedures.
+ - does each person's salary influence another's?
+ - need to assume that they are independent.
+
+independence between groups
+  - yes, since individuals are either female or male, so no overlap.
+  - can verify it holds
+
+normal distribution
+  - if the sample size is large (>= 30), Central Limit Theorem states the sampling distribution of the mean is normal.
+  - so the sampling distribution of the difference in sample means is approx normal.
+  
+
+
+## (7)
+
+### (a)
+
+The syllabus states that the two lowest participation is dropped. which means we are allowed to miss two participation points and still get full credit. Which means the the percent of the total score that our participation is worth is still 1% of the total score.
+
+### (b)
+
+You may not turn in late homework
+
+### (c)
+
+No the lowest exam score is not dropped. I wish :(
+ 
+
+

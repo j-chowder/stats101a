@@ -1,0 +1,56 @@
+---
+title: "test"
+output: pdf_document
+date: "2026-03-30"
+---
+
+```{r}
+simulate <- function(N, n, R, s){
+  set.seed(s)
+  
+  estimate <- numeric(R)
+  
+  for(times in 1:R){
+    mysample <- sample(1:N, n)
+    
+    estimate[times] <-  0.8 * (max(mysample) + sd(mysample))
+  }
+  
+  estimate
+}
+```
+
+```{r}
+library(ggplot2)
+```
+
+
+```{r}
+hist((simulate(500000, 20, 1000, 123)))
+
+```
+
+```{r}
+hist((simulate(100, 20, 1000, 123)))
+```
+```{r}
+hist((simulate(40, 20, 1000, 123)))
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+df <- data.frame(read.table('./lemonade depth.txt', header=TRUE))
+```
+
+```{r}
+df
+```
+
+```{r}
+plot(df$Depth, df$Time)
+```
+

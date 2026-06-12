@@ -1,0 +1,118 @@
+---
+title: "takehome_final_submit"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r eval = FALSE, echo = FALSE}
+library(tidyverse)
+
+```
+
+
+```{r echo = FALSE}
+df <- data.frame(read.csv('./crabs.csv'))
+
+df1 <- df |> dplyr::select(-Sex, -size)
+```
+
+## (1)
+
+```{r echo = FALSE}
+model8 <- lm(I(PinchingForce^(1/3)) ~ log(ThoraxLength) + log(Weight) + 
+                   log(ClawLength) + log(ClawWeight) + log(ClawHeight), 
+                 data = df1)
+
+par(mfrow=c(2,2))
+plot(model8)
+```
+
+(bigger if needed)
+
+```{r echo = FALSE}
+plot(model8)
+```
+
+
+### (a) Report your model by statingng the (i) the estimated value for each of the six or seven parameters, (ii) for each predictor, give the transform applied. If no transform, then state "none" or indicate it was raised to the 1st power.
+
+Response transform: ($1/3$)
+
+Estimated Parameters:
+
+`Intercept`
+
+  - -6.89845
+  - no transform
+  
+`ThoraxLength`
+
+  * 0.70178
+  * log transform
+  
+`Weight`
+
+  * -0.25851
+  * log transform
+  
+`ClawLength`
+
+  * 1.18128
+  * log transform
+  
+`ClawWeight`
+
+  * 1.57758
+  * log transform
+  
+`ClawHeight`
+
+  * -0.06667
+  * log transform
+
+### (b) Considering only the trend component, which model, yours or ours, is best and why? (Here and throughout, it is fair to say that they are equally good or bad.)
+
+Trend component, both are equally as bad. Maybe mine is slightly better but not considerably. My model has a mild U-shape, while your model has a wave / S-shape that changes direction twice. Your trend suggests a more complex and unmodelled structure compared to my slight U-shape. Regardless, both of ours have a discernible pattern and curve.
+
+### (c) Normality condition
+
+I think it's really hard to say, both of the QQ plots seem reasonably normal. But I think mine has a slight edge. For the middle range fit, both of ours fit the reference line pretty closely. In fact, our middle region looks pretty much the same. But I think due the outliers in the tails, your plot has a more distinguished and noticeable S-shape compared to mine. Mine is more linear.
+
+### (d) Constant variance condition
+
+Mine is better. If we look at the residual plot, neither of ours really has a fanning shape there, so can't really say much in terms of variance with that diagnostic.
+
+Mine is better in the scale-location plot, where my line is more flat, while yours has more variation and curve in the line (goes a little down).
+
+## (2) Best model
+
+```{r echo = FALSE}
+best_model <- lm(I(PinchingForce^(1/3) ~ log(ClawWeight)), data =df1)
+
+summary(best_model)
+```
+
+Best model is 
+
+$\text{PinchingForce}^{\frac{1}{3}} = \beta_0 +\beta_1log(\text{ClawWeight})$
+
+(best subsets regression, backward stepwise, and forward stepwise regression all unanimously agreed that only including these two would lead to the best model. (in terms of BIC))
+
+
+## (3) Using your model from #2 but now including Sex: Controlling for all important variables, how does PinchingForce vary for Sex, if at all? Use a 5% significance level. 
+
+Controlling for ClawWeight, there is no statistically significant difference in pinching force between male and female crabs (p = 0.457 >> 0.05). The estimated difference is small (males scoring 0.084 higher on the cube root scale), and the 95% confidence interval of (-0.146, 0.313) contains 0, confirming we cannot rule out no difference at all. There is insufficient evidence that Sex has any meaningful effect on PinchingForce.
+
+## (4) identify any problematic points that should be investigated. Explain how they are problematic (e.g. influence, leverage). Identify the points by row number.
+
+observations 1 and 28 in rows 1 and 22, respectively have high leverage ($4/n$ threshold).
+
+observations 7 and 27 in rows 7 and 21, respectively have high influence ($4/n$ threshold).
+
+
+
+
+
+
+

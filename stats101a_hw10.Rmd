@@ -1,0 +1,94 @@
+---
+title: "stats101a_hw10"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+```
+```{r}
+df <- data.frame(read.csv('./dietstudy.csv'))
+
+str(df)
+```
+
+## prepare data
+
+```{r}
+df <- df |>
+  select(DIET, SEX, WEIGHT_0, WEIGH_12, AVEAD_12)
+```
+
+```{r}
+df <- df |>
+  mutate(weight_change = WEIGH_12 - WEIGHT_0)
+
+df |> slice_sample(n = 2)
+```
+
+```{r}
+df <- df |> select(-WEIGH_12) 
+
+```
+
+## (Q1)
+
+```{r}
+model <- lm(weight_change ~ ., data =df)
+
+summary(model)
+```
+
+### (a)
+
+holding all other variables constant, there is no evidence that diet type does affect weight change. The estimated differences between diets are relatively small relative to standard errors, and the p-values are high (> 0.05), so not statistically significant.
+
+```{r}
+reduced <- lm(weight_change ~ SEX + WEIGHT_0 + AVEAD_12, data = df)
+
+anova(reduced, model)
+```
+Because p = 0.9017 which is much larger than 0.05, we fail to reject the null hypothesis $H_0$ that diet is associated with weight change. There is no evidence that diet type contributes to explaining weight change after accounting for sex, baseline weight, and average adherence
+
+### (b)
+
+Yes, the p-value (1.15e-13) is far smaller than 0.05, so we reject $H_0$ and can conclude with very strong evidence that adherence is associated with weight change, controlling for other variables.
+
+The estimated coefficient is -1.374, for each one-unit increase in average adherence, the expected weight change decreases by about 1.374 kg, all other variables held constnat.
+
+### (c)
+
+No. Since the p-value for SEXMale is 0.6544 > 0.05, we fail to reject $H_0$ -- holding all variables constant, there is no statistically significant evidence that males and females differ in average weight change.
+
+### (d)
+
+The WEIGHT_0 parameter of -0.056 indicates that for every 1 kg that a person initially started at, they would lose an estimated 0.056 more kg in weight after the 12 months.
+
+## (2)
+
+```{r}
+model_interaction <- lm(weight_change ~ WEIGHT_0 + SEX * AVEAD_12, data = df)
+
+summary(model_interaction)
+```
+Since the p-value of the interaction term is 0.233 ( > 0.05), we fail to reject $H_0$.
+
+There is no statistically significant evidence that the effect of adherence on weight change differs between males and females.
+
+## (3)
+
+```{r}
+diets <- df |> mutate(weight0_centered = WEIGHT_0 - mean(WEIGHT_0, na.rm = TRUE)) |> select(-WEIGHT_0)
+
+str(diets)
+```
+```{r}
+model <- lm(weight_change ~ ., data = diets)
+
+summary(model)
+```
+The expected (average) weight change for a female on the Atkins diet whose initial weight is equal to the sample mean initial weight and whose average adherence is 0 would be about 3 kg.
+
+

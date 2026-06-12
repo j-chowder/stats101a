@@ -1,0 +1,168 @@
+---
+title: "stats101a_hw5"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+
+## (1)
+
+### (a)
+
+```{r}
+df <- data.frame(read.table('./indicators.txt', header= TRUE))
+
+str(df)
+sapply(df, anyNA)
+```
+```{r}
+model <- lm(PriceChange ~ LoanPaymentsOverdue, data = df)
+confint(model, level = 0.95)
+```
+
+A 95% confidence interval for the slope of the regression model ($\beta_1$) is (-4.163454, -0.3335853).
+
+There is evidence of a significant negative linear association between `PriceChange` and `LoanPaymentsOverdue` at the 5% significane level. The interval lies entirely below 0, so the slope is significanty less than 0.
+
+```{r}
+predict(model, newdata = data.frame(LoanPaymentsOverdue = 4))
+
+predict(model, newdata = data.frame(LoanPaymentsOverdue = 4), interval = "confidence", level = 0.95)
+
+```
+No. 0% is not a feasiable value. It is not inside the interval (-6.648849, -2.310322)
+
+### (b)
+
+```{r}
+plot(df$LoanPaymentsOverdue, resid(model))
+```
+
+Seems to be a bit gray. There's no strong trend, but the residuals show some clustering and uneven spread. (maybe non-linearity)?
+
+the variance also does not look the most constant (some regions are more tightly clustered)
+
+it's not completely valid nor invalid. Somewhere in the middle I think.
+
+## (2)
+
+```{r}
+df <- data.frame(read.table('./invoices.txt' ,header = TRUE))
+
+str(df)
+```
+(a) Find a 95% confidence interval for the start-up time, i.e., b0.
+
+```{r}
+model <- lm(Time ~ Invoices, data = df)
+
+confint(model, level = 0.95)
+```
+
+(0.391249620, 0.89217014)
+
+Suppose that a best practice benchmark for the average processing time for an additional invoice is 0.01 hours (or 0.6 minutes). Test the null hypothesis H b= against a two-sided alternative. Interpret your result.
+
+```{r}
+b1 <- coef(model)["Invoices"]                     # estimated slope
+se_b1 <- summary(model)$coefficients["Invoices", "Std. Error"]
+
+t <- (b1 - 0.01) / se_b1
+
+p <- 2 * pt(-abs(t), df.residual(model))
+
+p
+```
+
+Since p value = 0.13 > 0.05, we fail to reject the null hypothesis that $\beta_1 = 0.01$, which means we do not have enough evidence to conclude that $\beta_1 \ne 0.01$.
+
+(c) Find a point estimate and a 95% prediction interval for the time taken to process 130 invoices.
+
+```{r}
+predict(model, newdata = data.frame(Invoices = 130), interval = 'prediction', level = 0.95)
+```
+
+point estimate = 2.109624 hours
+95% prediction interval = (1.422947, 2.7963) hours
+
+## (3)
+
+Model 1 shows a strong linear relationship and the points lie close to the regression line. So its residuals are smaller.
+Model 2 shows little to no linear relatinoship and so the residuals are larger.
+
+Model 1 has a lower RSS than Model 2. This is because Model 1's points are tightly clustered around the line.
+
+Since SYY = SSreg + RSS, and since both models use the same Y (SYY is the same for both), Model 1 has larger SSreg.
+
+Model 1 has smaller RSS so it must have larger SSreg than Model 2.
+
+Therefore the only answer choice that is true is (d), RSS for model 1 is less than RSS for model 2 while SSreg for model 1 is greater htan SSreg for model 2.
+
+## (4)
+
+### (a)
+
+$RSE = \sqrt{\frac{RSS}{df}}$ so $RSS = RSE^2 * df=(2.418)^2*33=192.9$
+
+### (b)
+
+$R^2 = \frac{SSreg}{SYY}$ and $SYY = SSreg + RSS$ so $SSreg = \frac{R^2}{1 - R^2} * RSS = \frac{0.7254}{1-0.7254}*192.4=509.7$
+
+### (c)
+
+$MSreg = \frac{SSreg}{df_{reg}} = 509.7 / 1 = 509.7$
+
+### (d)
+
+$SYY = SSreg + RSS = 509.7 + 192.9 = 702.6$
+
+### (e)
+
+$r = \sqrt{R^2} = \sqrt{0.7254} = 0.852$
+
+## (5)
+
+### (a)
+
+```{r}
+mymodel <- function(random.seed, beta_0, beta_1, sigma, x){
+  set.seed(random.seed)
+  n <- length(x)
+  eps <- rnorm(n, mean = 0, sd = sigma)
+  
+  y <- beta_0 + beta_1 * x + eps
+}
+```
+
+Since $Var(\hat{\beta_1}) = \frac{\sigma^2}{SXX} \approx \frac{RSS}{n-2} * \frac{1}{SXX}$, try to maximize SXX.
+
+So have as much variation in x as possible (as far away from mean as possible). So concentrate in extremes.
+
+```{r}
+x <- rep(c(0, 100), each= 50)
+
+y <- mymodel(123, 1, 10, 20, x)
+
+model <- lm(y ~ x)
+```
+
+```{r}
+summary(model)
+```
+
+The standard error is 0.03663!
+
+### (b)
+
+I would explain the standard error of the slope to a beginning statistics student by saying:
+
+it is how much the estimated slope would vary if you repeated the study many times. Fitting a line and getting a slope won't be exact, just like sample point estimates. It depends on your particular sample. So if you collect a different sample and fit the line again, you would get a slightly different slope. So, the standard error of the slope measure show much these slopes differ from one another.
+
+
+
+

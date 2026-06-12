@@ -1,0 +1,183 @@
+---
+title: "stats101a_hw8"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+install.packages('car', repos = "https://cran.r-project.org")
+library(car)
+```
+
+## (1)
+
+```{r}
+df <- data.frame(read.csv('./cars04.csv'))
+
+str(df)
+```
+```{r}
+numeric_vars <- df[, sapply(df, is.numeric)]
+numeric_vars <- numeric_vars[, !names(numeric_vars) %in% c("Hybrid")]
+
+
+model <- lm(SuggestedRetailPrice ~ ., data = numeric_vars)
+summary(model)
+```
+
+### (a)
+
+`Vehicle.name` is just the name of the vehicle -- it's an identifier similar to ids or keys that provide information to us, the user, but does not provide much information to a model. That's why we exclude it from the model -- it does not tell us anything important about `SuggestedRetailPrice` beyond its features / specs that are already extrapolated with the rest of the predictors.
+
+### (b)
+
+$$\widehat{\text{SuggestedRetailPrice}} = \beta_0 + \beta_1(\text{DealerCost}) + \beta_2(\text{EngineSize}) + \beta_3(\text{Cylinders}) + \beta_4(\text{Horsepower}) + \beta_5(\text{CityMPG}) + \beta_6(\text{HighwayMPG}) + \beta_7(\text{Weight}) + \beta_8(\text{WheelBase}) + \beta_9(\text{Length}) + \beta_{10}(\text{Width})$$
+### (c)
+
+```{r}
+summary(model)
+```
+
+slope coefficient: 228.32952
+t-value: 3.171
+p value: 0.001730
+
+Since the p-value = 0.001730 < $\alpha$ = 0.05, there is statistically significant evidence to reject the null hypothesis ($H_0: B_{\text{cylinders}} = 0$). That is, there is evidence that the number of cylinders has a linear relationship with suggested retail price, controlling for all other predictors. 
+
+### (d)
+
+For each additional cylinder, the suggested retail price increases by approximately $228.33 on average, all other predictors being the same.
+
+### (e)
+
+```{r}
+anova(model)
+
+# get F value: 9.6084e+00
+```
+```{r}
+# t = sqrt(F)
+
+t <- sqrt(9.6084e+00)
+
+t
+```
+
+### (f)
+
+```{r}
+summary(model)
+```
+
+F-statistic = 2.073e+04
+
+The F-statistic tests the overall significance of the model, that is:
+
+$H_0: \beta_{1} = \beta_{2} =  ...  = \beta_{10} = 0$
+
+$H_a: \text{at least one } \beta_i \neq 0$
+
+Since the p-value < 2.2e-16 < 0.05, we reject $H_0$ and conclude that at least one predictor has a statistically significant linear relationship with suggested retail price. So the model as a whole is statistically significant.
+
+## (2)
+
+```{r}
+df <- data.frame(read.csv('./pgatour2006-3.csv'))
+
+str(df)
+```
+
+```{r}
+df <- subset(df, select = -c(Name, TigerWoods))
+
+str(df)
+```
+```{r}
+model <- lm(PrizeMoney ~ ., data = df)
+summary(model)
+```
+
+### (a)
+
+```{r}
+pairs(df)
+```
+
+`PuttingAverage` and `PuttsPerRound`.
+
+`DrivingDistance` and `DrivingAccuracy`
+
+`PuttingAverage` and `BirdieConversion`
+
+### (b)
+
+```{r}
+vif(model)[vif(model) > 5]
+```
+
+`PuttingAverage`, `BirdieConversion`, and `PuttsPerRound` are greater than 5, which relates to the issues with collinearity that I saw in (a). Interestingly, and even after investigating the scatterplots in hindsight, `GIR` has a VIF value > 5 but I don't really think the collinearity is too big with it.
+
+### (c)
+
+An inflated standard error directly inflates the denominator of the t-statistic since
+
+$$t = \frac{\hat{\beta}_j}{SE(\hat{\beta}_j)}$$
+So a larger Standard Error results in a smaller magnitude t score which results in a larger p-value. This means the variable may appear statistically insignificant not because it truly has no effect, but because collinearity is masking it.
+
+### (d)
+
+```{r}
+par(mfrow = c(2,2))
+plot(model)
+```
+
+Non-constant variance:
+ - residuals v fitted plot show a fan pattern where variance increases with fitted values
+ - scale-location plot has strong upward trend
+
+non-normal:
+ - QQplot has significant deviation from the straight line at the upper tail.
+ 
+trend/non-linearity:
+- residuals vs fitted plot shows a clear pattern/trend where it decreases in a straight line then goes back up .
+
+### (e)
+
+```{r}
+log_model <- lm(log(PrizeMoney) ~ ., data = df)
+
+par(mfrow = c(2,2))
+plot(log_model)
+```
+
+Yes a log transform of the response variable makes the validity much better.
+
+The constant variance is much better supported. The QQplot is much more following hte line. Lack of a trend in residuals v. fitted as well as pretty constant variacnce.
+
+### (f)
+
+```{r}
+n <- nrow(df)
+p <- 9  
+threshold <- 2*(p+1)/n
+threshold
+
+# get leverage values
+leverage <- hatvalues(model)
+which(leverage > threshold)
+```
+
+potential bad high leverage points = observations 28 40 168 178
+
+### (g)
+
+```{r}
+cooks <- cooks.distance(model)
+which(cooks > 1)
+```
+
+observation 178 is a high influence point.

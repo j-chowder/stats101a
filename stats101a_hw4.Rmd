@@ -1,0 +1,185 @@
+---
+title: "stats101a_hw4"
+author: "Jaden Chou - 206654728"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r}
+generate_quadratic <- function(a, b, c, sigma, x = rep(seq(1, 10, 0.1), 4), random.seed) {
+  
+  # Compute deterministic part
+  f_x <- a + b * x + c * x^2
+  
+  # Generate noise
+  epsilon <- rnorm(length(x), mean = 0, sd = sigma)
+  
+  # Generate response
+  y <- f_x + epsilon
+  
+  y
+}
+```
+
+## (1)
+
+### (a)
+
+```{r}
+a = 1
+b = 5
+c = 3
+sigma = 10
+x = rep(seq(1, 10, 0.1), 4)
+y <- generate_quadratic(a,b,c, sigma, x, set.seed(123))
+
+plot(x, y)
+```
+### (b)
+
+```{r}
+model_linear <- lm(y ~ x)
+
+resids <- resid(model_linear)
+
+plot(x, resids)
+```
+
+The points form a U-shaped (parabolic) pattern. positive at low x-values, negative in the middle, positive at high.
+systematic curved pattern. It is a non-random pattern. The key feature is the U-shaped (curved) pattern in the residuals.
+
+### (c)
+
+```{r}
+model2 <- lm(y ~ x + I(x^2))
+
+resids2 <- resid(model2)
+
+plot(x, resids2)
+```
+
+Residuals are randomly scattered around zero with no visible pattern. no trends.
+
+### (d)
+
+```{r}
+simulate_err <- function(a, b, x=rep(seq(1,10,.1),4), sigma, random.seed){
+  a+b*x+rnorm(length(x),0,sigma*x)
+}
+
+
+x=rep(seq(1,10,.1),4) 
+a= 1
+b=200
+sigma=100
+random.seed=123
+
+y <- simulate_err(a,b,x,sigma,random.seed)
+
+plot(x,y)
+```
+Errors have variance that increases with x. The variance is not constant (unlike the linear model with an error with the same variance). So the variance increases as increases and the data becomes more and more spread out.
+
+
+### (e)
+
+```{r}
+model3 <- lm(y ~ x)
+resids3 <- resid(model3)
+
+plot(x, resids3)
+```
+There's a cornucopia shape or fan-shape where the residuals increase in magnitude over x.
+
+## (2)
+
+```{r}
+atus <- data.frame(read.csv('./atus.csv'))
+library(tidyverse)
+```
+
+```{r}
+atus1 <- filter(atus, homework > 0 )
+```
+
+### (a)
+
+```{r}
+plot(atus1$sleep, atus1$homework)
+```
+
+No the trend does not seem to be linear.
+
+### (b)
+
+```{r}
+model <- lm(homework ~ sleep, data = atus1)
+
+summary(model)
+
+# i: no sleep = intercept = b0
+# 249.76178
+
+# ii: slope = b1
+# -0.13120
+```
+### (c)
+
+```{r}
+resids <- resid(model)
+plot(atus1$sleep, resids)
+```
+no clear pattern or trend since the residuals are scattered fairly randomly. no distinguishable pattern. This would suggest that the relationship between sleep and homework is roughly linear.
+
+looks a bit like variance is not constant? the spread of residuals looks uneven.
+
+outliers exist (some really large one)
+
+## (3)
+
+Do Problem 1 in Chapter 2 of the textbook (on page 38).
+
+```{r}
+df <- data.frame(read.csv('./playbill.csv'))
+
+str(df)
+```
+
+### (a)
+
+```{r}
+model <- lm(CurrentWeek ~ LastWeek, data = df)
+confint(model, level = 0.95)
+```
+
+
+The confidence interval is (9.514971e-01, 1.012666). 1 is a pluasible value since it lies within the interval.
+
+### (b)
+
+```{r}
+b0_hat <- coef(model)[1]
+se_b0  <- summary(model)$coefficients[1, 2]
+
+t_stat <- (b0_hat - 10000) / se_b0
+
+p_value <- 2 * pt(-abs(t_stat), df.residual(model))
+p_value
+```
+
+since the p-value is greater than 0.05, we fail to rejct the null hypothesis of $\beta_0 = 10000$
+
+### (c)
+
+```{r}
+new_data <- data.frame(LastWeek = 400000)
+predict(model, newdata = new_data, interval = "prediction", level = 0.95)
+```
+
+We are 95% confident that the actual gross box office this week will fall between 359832.8 and 439442.2 dollars for a single new production with $400,000 last week.
+
+$450,000 is not a feasible value since it is not within the bounds set up by the 95% confidence interval.
+
+### (d)
+
+This rule is very simple but ultimately too simplistic and sacrificing a lot of nuance and complexity. it may perform moderately well when week-to-week changes are small, but usually there will be a trend (downward or upward) that this rule won't reflect.
